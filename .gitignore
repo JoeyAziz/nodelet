@@ -1,0 +1,6 @@
+nodelet
+nodelet.dSYM/
+*.o
+*.a
+.DS_Store
+vendor/
