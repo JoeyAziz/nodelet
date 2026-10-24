@@ -70,25 +70,35 @@ JSValue nodelet_console_log(JSContext *ctx, JSValueConst this_val, int argc, JSV
 
 void js_add_console_log(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
+  JSValue console = JS_GetPropertyStr(ctx, global, "console");
 
-  JSValue console = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, global, "console", console);
   JS_SetPropertyStr(ctx, console, "log", JS_NewCFunction(ctx, nodelet_console_log, "log", 1));
 
+  JS_FreeValue(ctx, console);
   JS_FreeValue(ctx, global);
 }
 
 void js_add_console_err(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
+  JSValue console = JS_GetPropertyStr(ctx, global, "console");
+
+  JS_SetPropertyStr(ctx, console, "err", JS_NewCFunction(ctx, nodelet_console_err, "err", 1));
+
+  JS_FreeValue(ctx, console);
+  JS_FreeValue(ctx, global);
+}
+
+void js_attach_console(JSContext *ctx) {
+  JSValue global = JS_GetGlobalObject(ctx);
 
   JSValue console = JS_NewObject(ctx);
   JS_SetPropertyStr(ctx, global, "console", console);
-  JS_SetPropertyStr(ctx, console, "err", JS_NewCFunction(ctx, nodelet_console_err, "err", 1));
-
+  JS_FreeValue(ctx, console);
   JS_FreeValue(ctx, global);
 }
 
 void attach_methods_to_glob_obj(JSContext *ctx) {
+  js_attach_console(ctx);
   js_add_console_log(ctx);
   js_add_console_err(ctx);
 }
