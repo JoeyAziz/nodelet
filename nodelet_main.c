@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <quickjs.h>
+#include "nodelet_bindings.h"
 
 
 #define fatal(fmt, ...) do {               \
     fprintf(stderr, (fmt), ##__VA_ARGS__); \
     exit(1);                               \
 } while(0)
+
 
 char *load_module_file(char *filename, size_t *len) {
   FILE *file = fopen(filename, "rb");
@@ -34,77 +35,9 @@ char *load_module_file(char *filename, size_t *len) {
   return buffer; 
 }
 
-JSValue nodelet_print(JSContext *ctx, FILE *stream, JSValueConst this_val, int argc, JSValueConst *argv) {
-  const char *collect[argc];
-  for (int i=0; i<argc; ++i) {
-    collect[i] = JS_ToCString(ctx, argv[i]);
-
-    if (collect[i] == NULL) {
-      // free collection
-      for (int j = 0; j < i; ++j) {
-	JS_FreeCString(ctx, collect[j]);
-      }
-      return JS_EXCEPTION;
-    }
-  }
-
-  for (int i=0; i<argc; ++i) {
-    char *space = i==0 ? "" : " ";
-    char *end   = i==argc-1 ? "\n" : ""; 
-    fprintf(stream, "%s%s%s", space, collect[i], end);
-  }
-  for (int i=0; i<argc; ++i) {
-    JS_FreeCString(ctx, collect[i]);
-  }
-  
-  return JS_UNDEFINED;
-}
-
-JSValue nodelet_console_err(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  return nodelet_print(ctx, stderr, this_val, argc, argv);
-}
-
-JSValue nodelet_console_log(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-    return nodelet_print(ctx, stdout, this_val, argc, argv);
-}
-
-void js_add_console_log(JSContext *ctx) {
-  JSValue global = JS_GetGlobalObject(ctx);
-  JSValue console = JS_GetPropertyStr(ctx, global, "console");
-
-  JS_SetPropertyStr(ctx, console, "log", JS_NewCFunction(ctx, nodelet_console_log, "log", 1));
-
-  JS_FreeValue(ctx, console);
-  JS_FreeValue(ctx, global);
-}
-
-void js_add_console_err(JSContext *ctx) {
-  JSValue global = JS_GetGlobalObject(ctx);
-  JSValue console = JS_GetPropertyStr(ctx, global, "console");
-
-  JS_SetPropertyStr(ctx, console, "err", JS_NewCFunction(ctx, nodelet_console_err, "err", 1));
-
-  JS_FreeValue(ctx, console);
-  JS_FreeValue(ctx, global);
-}
-
-void js_attach_console(JSContext *ctx) {
-  JSValue global = JS_GetGlobalObject(ctx);
-  JSValue console = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, global, "console", console);
-  JS_FreeValue(ctx, global);
-}
-
-void attach_methods_to_glob_obj(JSContext *ctx) {
-  js_attach_console(ctx);
-  js_add_console_log(ctx);
-  js_add_console_err(ctx);
-}
-
 int main(int argc, char **argv) {
-  if (argc <= 1) {
-    fprintf(stderr, "USAGE: %s <FILE>", argv[0]);
-    return 0;
+  if (argc != 2) {
+    fatal("USAGE: %s <FILE>", argv[0]);
   }
   char* filename = argv[1];
   
@@ -117,7 +50,7 @@ int main(int argc, char **argv) {
     JS_FreeRuntime(js_runtime);  
     fatal("Couldn't initialize js_context");
   }
-  attach_methods_to_glob_obj(js_context);
+  nodelet_bindings_attach(js_context);
   
   size_t js_module_len;
   char *js_module = load_module_file(filename, &js_module_len);

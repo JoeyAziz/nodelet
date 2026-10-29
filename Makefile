@@ -1,5 +1,6 @@
 build:
 	gcc nodelet_main.c \
+	nodelet_bindings.c \
 	vendor/quickjs/quickjs.c \
 	vendor/quickjs/libregexp.c \
 	vendor/quickjs/libunicode.c \
