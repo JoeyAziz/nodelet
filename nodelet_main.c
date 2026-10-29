@@ -23,6 +23,9 @@ int main(int argc, char **argv) {
   nodelet_bindings_attach(js_context);
 
   int eval_res = nodelet_eval(js_context, filename);
+  if (eval_res == 0) {
+    eval_res = nodelet_run_micro_queue(js_runtime);
+  }
   
   JS_FreeContext(js_context);
   JS_FreeRuntime(js_runtime);  

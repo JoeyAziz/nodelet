@@ -24,3 +24,21 @@ int nodelet_eval(JSContext *ctx, char *filename) {
   JS_FreeValue(ctx, js_eval_res);
   return res;
 }
+
+int nodelet_run_micro_queue(JSRuntime *rt) {
+  int res = 0;
+  while (1) {
+    JSContext *ctx;
+    int q_res = JS_ExecutePendingJob(rt, &ctx);
+    if (q_res < 0) {
+      report_exception(ctx);
+      res = 1;
+      break;
+    }
+    if (q_res == 0) {
+      // queue is empty
+      break;
+    }
+  }
+  return res;
+}
